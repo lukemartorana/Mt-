@@ -24,6 +24,20 @@
     --radius-md:16px;
     --radius-sm:11px;
   }
+  [data-theme="dark"]{
+    --bg:#262624;
+    --surface:#30302e;
+    --surface-2:#3a3a37;
+    --ink:#f5f4ee;
+    --ink-soft:#a9a599;
+    --ink-faint:#726e63;
+    --line:rgba(255,255,255,0.09);
+    --terracotta:#d97757;
+    --terracotta-dark:#e79274;
+    --terracotta-soft:rgba(217,119,87,0.2);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 10px 26px rgba(0,0,0,0.4);
+  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
   body{
@@ -33,12 +47,14 @@
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
     -webkit-font-smoothing:antialiased;
     padding-bottom:calc(86px + env(safe-area-inset-bottom));
+    transition:background .2s ease, color .2s ease;
   }
   h1,h2,h3{margin:0; letter-spacing:-0.02em;}
 
   .topbar{
     position:sticky; top:0; z-index:5;
-    background:rgba(247,242,234,0.88);
+    background:var(--bg);
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
     backdrop-filter:blur(18px) saturate(160%);
     -webkit-backdrop-filter:blur(18px) saturate(160%);
     padding:calc(16px + env(safe-area-inset-top)) 20px 12px;
@@ -365,7 +381,7 @@
   nav{
     position:fixed;
     bottom:0; left:0; right:0;
-    background:rgba(255,255,255,0.92);
+    background:color-mix(in srgb, var(--surface) 92%, transparent);
     backdrop-filter:blur(18px) saturate(160%);
     -webkit-backdrop-filter:blur(18px) saturate(160%);
     border-top:1px solid var(--line);
@@ -391,6 +407,21 @@
   nav button svg{width:25px; height:25px; stroke:var(--ink-faint); fill:none; stroke-width:1.8;}
   nav button.active{color:var(--ink);}
   nav button.active svg{stroke:var(--ink); stroke-width:2.2;}
+
+  /* ---- Theme toggle ---- */
+  .theme-btn{
+    width:38px; height:38px;
+    border-radius:50%;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .theme-btn svg{width:19px; height:19px; stroke:var(--ink-soft); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .theme-btn:active{opacity:0.8;}
 </style>
 </head>
 <body>
@@ -400,6 +431,7 @@
     <div class="wordmark">Ro<span>ster</span></div>
     <div class="sub" id="pageSub">Your rotation of go-to meals</div>
   </div>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme"></button>
 </div>
 
 <main>
@@ -462,6 +494,26 @@
 </nav>
 
 <script>
+const THEME_KEY = 'mealroster.theme';
+const SUN_ICON = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12H5M19 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>';
+const MOON_ICON = '<svg viewBox="0 0 24 24"><path d="M20 14.2A8.5 8.5 0 1 1 9.8 4a6.6 6.6 0 0 0 10.2 10.2Z"/></svg>';
+
+function loadTheme(){
+  const saved = localStorage.getItem(THEME_KEY);
+  if(saved) return saved;
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+}
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
+  document.getElementById('themeToggle').innerHTML = theme === 'dark' ? SUN_ICON : MOON_ICON;
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+applyTheme(loadTheme());
+
 const STORE_KEY = 'mealroster.recipes';
 const DAYS_KEY = 'mealroster.days';
 const WEEK_KEY = 'mealroster.weekresult';
@@ -622,15 +674,25 @@ function generateWeek(){
     return;
   }
   const newResult = {};
-  const recentIds = []; // ids used on the last up to 2 included days
-  activeDays.forEach(day => {
-    let candidates = recipes.filter(r => !recentIds.includes(r.id));
-    if(candidates.length === 0) candidates = recipes; // not enough variety to avoid a repeat, fall back
-    const pick = candidates[Math.floor(Math.random() * candidates.length)];
-    newResult[day] = {number: pick.number, title: pick.title, id: pick.id};
-    recentIds.push(pick.id);
-    if(recentIds.length > 2) recentIds.shift();
-  });
+  if(recipes.length >= activeDays.length){
+    // Enough distinct meals to cover every included day with no repeats at all
+    const shuffled = [...recipes].sort(() => Math.random() - 0.5);
+    activeDays.forEach((day, i) => {
+      const pick = shuffled[i];
+      newResult[day] = {number: pick.number, title: pick.title, id: pick.id};
+    });
+  } else {
+    // Not enough meals to fill the week without repeating — space repeats out as much as possible
+    const recentIds = [];
+    activeDays.forEach(day => {
+      let candidates = recipes.filter(r => !recentIds.includes(r.id));
+      if(candidates.length === 0) candidates = recipes;
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      newResult[day] = {number: pick.number, title: pick.title, id: pick.id};
+      recentIds.push(pick.id);
+      if(recentIds.length > 2) recentIds.shift();
+    });
+  }
   weekResult = newResult;
   saveWeekResult(weekResult);
   renderDayRows();
