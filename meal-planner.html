@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Roster</title>
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=">
+<style>
+  :root{
+    --bg:#f7f2ea;
+    --surface:#ffffff;
+    --surface-2:#efe8db;
+    --ink:#241f1a;
+    --ink-soft:#8a8171;
+    --ink-faint:#c6bda9;
+    --line:rgba(36,31,26,0.09);
+    --terracotta:#d97757;
+    --terracotta-dark:#b85e3f;
+    --terracotta-soft:rgba(217,119,87,0.13);
+    --grad: linear-gradient(135deg, #f6a54a 0%, #e2477a 45%, #8b3fb8 100%);
+    --shadow-sm: 0 1px 2px rgba(36,31,26,0.04);
+    --shadow-md: 0 10px 26px rgba(36,31,26,0.10);
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:11px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:calc(86px + env(safe-area-inset-bottom));
+  }
+  h1,h2,h3{margin:0; letter-spacing:-0.02em;}
+
+  .topbar{
+    position:sticky; top:0; z-index:5;
+    background:rgba(247,242,234,0.88);
+    backdrop-filter:blur(18px) saturate(160%);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    padding:calc(16px + env(safe-area-inset-top)) 20px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .topbar .wordmark{
+    font-size:24px;
+    font-weight:800;
+    letter-spacing:-0.03em;
+  }
+  .topbar .wordmark span{
+    background:var(--grad);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .topbar .sub{
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink-soft);
+    margin-top:1px;
+  }
+
+  main{
+    max-width:600px;
+    margin:0 auto;
+    padding:14px 16px 40px;
+  }
+  .page{display:none;}
+  .page.active{display:block; animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  /* ---- Stories tray ---- */
+  .tray{
+    display:flex;
+    gap:16px;
+    overflow-x:auto;
+    padding:6px 2px 16px;
+    margin-bottom:6px;
+    scrollbar-width:none;
+  }
+  .tray::-webkit-scrollbar{display:none;}
+  .story{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    flex-shrink:0;
+    width:60px;
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .story-ring{
+    width:54px; height:54px;
+    border-radius:50%;
+    background:var(--grad);
+    padding:2.5px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .story-inner{
+    width:100%; height:100%;
+    border-radius:50%;
+    background:var(--surface);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size:16px;
+    color:var(--ink);
+    border:2.5px solid var(--bg);
+  }
+  .story-label{
+    font-size:10.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    text-align:center;
+    line-height:1.2;
+    max-width:60px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* ---- Add card ---- */
+  .add-card{
+    background:var(--surface);
+    border-radius:var(--radius-lg);
+    padding:18px 18px 20px;
+    margin-bottom:20px;
+    box-shadow:var(--shadow-sm);
+    border:1px solid var(--line);
+  }
+  .add-card h2{font-size:16px; font-weight:800;}
+  label{
+    display:block;
+    font-size:11.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-faint);
+    margin:16px 0 6px;
+  }
+  input[type=text], textarea{
+    width:100%;
+    border:none;
+    background:var(--surface-2);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    font-size:16px;
+    color:var(--ink);
+    font-family:inherit;
+    line-height:1.4;
+  }
+  textarea{min-height:100px; resize:vertical;}
+  input::placeholder, textarea::placeholder{color:var(--ink-faint);}
+  input:focus, textarea:focus{outline:2px solid var(--terracotta); outline-offset:0;}
+  .hint{font-size:12px; color:var(--ink-faint); margin-top:6px;}
+
+  .btn{
+    border:none;
+    border-radius:999px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+  .btn svg{width:18px; height:18px;}
+  .btn-primary{
+    background:var(--terracotta);
+    color:#fff;
+    width:100%;
+    padding:14px;
+    margin-top:18px;
+  }
+  .btn-primary:active{background:var(--terracotta-dark); transform:scale(0.99);}
+  .btn-grad{
+    background:var(--grad);
+    color:#fff;
+    width:100%;
+    padding:15px;
+    box-shadow:var(--shadow-md);
+  }
+  .btn-grad:active{opacity:0.92; transform:scale(0.99);}
+
+  /* ---- Recipe cards ---- */
+  .list-heading{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:4px 4px 10px;
+  }
+  .list-heading h3{font-size:13px; font-weight:800; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em;}
+  .count-chip{
+    background:var(--terracotta-soft);
+    color:var(--terracotta-dark);
+    font-size:12px;
+    font-weight:800;
+    padding:3px 10px;
+    border-radius:20px;
+  }
+
+  .recipe{
+    background:var(--surface);
+    border-radius:var(--radius-md);
+    padding:14px 14px 12px;
+    margin-bottom:10px;
+    border:1px solid var(--line);
+    transition:box-shadow .3s ease;
+  }
+  .recipe.flash{box-shadow:0 0 0 2px var(--terracotta);}
+  .recipe-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .recipe-num{
+    flex-shrink:0;
+    width:30px; height:30px;
+    border-radius:50%;
+    background:var(--grad);
+    color:#fff;
+    font-size:13px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .recipe-title{
+    font-size:16px;
+    font-weight:700;
+    flex:1;
+    line-height:1.3;
+  }
+  .icon-btn{
+    background:none;
+    border:none;
+    padding:6px;
+    color:var(--ink-faint);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .icon-btn svg{width:18px; height:18px;}
+  .icon-btn:active{color:var(--terracotta-dark);}
+  .recipe-ing{
+    margin:10px 0 2px 42px;
+    padding:0;
+    list-style:none;
+  }
+  .recipe-ing li{
+    position:relative;
+    padding-left:14px;
+    margin:4px 0;
+    font-size:14px;
+    color:var(--ink-soft);
+    line-height:1.4;
+  }
+  .recipe-ing li::before{
+    content:"";
+    position:absolute;
+    left:0; top:8px;
+    width:4px; height:4px;
+    border-radius:50%;
+    background:var(--ink-faint);
+  }
+
+  .empty{
+    color:var(--ink-soft);
+    font-size:14px;
+    padding:36px 20px;
+    text-align:center;
+    background:var(--surface);
+    border-radius:var(--radius-md);
+    border:1px solid var(--line);
+  }
+  .empty strong{display:block; color:var(--ink); font-size:15px; margin-bottom:4px;}
+
+  /* ---- Week page ---- */
+  .day-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--surface);
+    border-radius:var(--radius-md);
+    padding:14px 16px;
+    margin-bottom:8px;
+    border:1px solid var(--line);
+    transition:opacity .2s ease;
+    cursor:pointer;
+  }
+  .day-row.off{opacity:0.45;}
+  .day-row:active{opacity:0.8;}
+
+  .day-name{
+    font-size:15px;
+    font-weight:700;
+    width:82px;
+    flex-shrink:0;
+  }
+  .day-result{
+    flex:1;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13.5px;
+    color:var(--ink-faint);
+    justify-content:flex-end;
+    text-align:right;
+  }
+  .day-result .num{
+    background:var(--terracotta-soft);
+    color:var(--terracotta-dark);
+    font-weight:800;
+    font-size:12px;
+    width:22px; height:22px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .day-result .title{color:var(--ink); font-weight:600;}
+
+  .week-actions{margin:18px 0 6px;}
+
+  /* ---- Shopping list ---- */
+  .shop-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:var(--surface);
+    border-radius:var(--radius-md);
+    padding:13px 16px;
+    margin-bottom:8px;
+    border:1px solid var(--line);
+  }
+  .shop-item .label{
+    font-size:15px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .shop-item .qty{
+    flex-shrink:0;
+    background:var(--terracotta-soft);
+    color:var(--terracotta-dark);
+    font-size:12.5px;
+    font-weight:800;
+    padding:3px 10px;
+    border-radius:20px;
+  }
+
+  /* ---- Nav ---- */
+  nav{
+    position:fixed;
+    bottom:0; left:0; right:0;
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(18px) saturate(160%);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    border-top:1px solid var(--line);
+    display:flex;
+    padding-bottom:env(safe-area-inset-bottom);
+    z-index:10;
+  }
+  nav button{
+    flex:1;
+    background:none;
+    border:none;
+    padding:12px 0 9px;
+    font-size:11px;
+    font-weight:600;
+    font-family:inherit;
+    color:var(--ink-faint);
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+  }
+  nav button svg{width:25px; height:25px; stroke:var(--ink-faint); fill:none; stroke-width:1.8;}
+  nav button.active{color:var(--ink);}
+  nav button.active svg{stroke:var(--ink); stroke-width:2.2;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="wordmark">Ro<span>ster</span></div>
+    <div class="sub" id="pageSub">Your rotation of go-to meals</div>
+  </div>
+</div>
+
+<main>
+
+  <!-- RECIPE PAGE -->
+  <section class="page active" id="page-recipes">
+    <div class="tray" id="storyTray"></div>
+
+    <div class="add-card">
+      <h2>Add a meal</h2>
+      <label for="titleInput">Meal name</label>
+      <input type="text" id="titleInput">
+      <label for="ingInput">Ingredients — one per line</label>
+      <textarea id="ingInput"></textarea>
+      <div class="hint">No quantities needed — just what's in it.</div>
+      <button class="btn btn-primary" onclick="addRecipe()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add to list
+      </button>
+    </div>
+
+    <div class="list-heading">
+      <h3>All meals</h3>
+      <span class="count-chip" id="countChip">0</span>
+    </div>
+    <div id="recipeList"></div>
+  </section>
+
+  <!-- WEEK PAGE -->
+  <section class="page" id="page-week">
+    <div id="dayRows"></div>
+    <div class="week-actions">
+      <button class="btn btn-grad" onclick="generateWeek()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="21" y1="3" x2="14" y2="10"/><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        Generate this week
+      </button>
+    </div>
+  </section>
+
+  <!-- SHOPPING LIST PAGE -->
+  <section class="page" id="page-shop">
+    <div id="shopList"></div>
+  </section>
+
+</main>
+
+<nav>
+  <button id="navRecipes" class="active" onclick="showPage('recipes')">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    Recipes
+  </button>
+  <button id="navWeek" onclick="showPage('week')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    Weekly Plan
+  </button>
+  <button id="navShop" onclick="showPage('shop')">
+    <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    Shopping
+  </button>
+</nav>
+
+<script>
+const STORE_KEY = 'mealroster.recipes';
+const DAYS_KEY = 'mealroster.days';
+const WEEK_KEY = 'mealroster.weekresult';
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+const seedRecipes = [
+  {title:"Chicken Rice and Vegetables", ingredients:["Chicken tenderloin or breast","Sauce or seasoning of choice","Steamed vegetables","Sauce / relish of choice to mix in"]},
+  {title:"Mexican Salad Bowls", ingredients:["Lettuce","Mince","Taco seasoning","Sour cream","Cheese","Hot sauce"]},
+  {title:"Pasta and Meatballs", ingredients:["Pasta of choice","Sauce of choice","Pork and beef meatballs","Parmesan"]},
+  {title:"Chicken with Crispy Potatoes and Vegetables", ingredients:["Chicken tenderloins or breast","Sauce or seasoning of choice","3x medium potatoes","Steamed vegetables"]},
+  {title:"Egg Fried Rice with Chicken", ingredients:["Eggs","Rice","Peas and corn","Chicken with seasoning"]},
+  {title:"Chicken Katsu with Rice", ingredients:["Rice","Chicken schnitzel","Katsu sauce / stock","Steamed vegetables"]},
+  {title:"Garlic Butter Chicken with Vegetables and Mash", ingredients:["Mash (frozen / potatoes)","Garlic","Garlic butter","Steamed vegetables"]}
+];
+
+function loadRecipes(){
+  const raw = localStorage.getItem(STORE_KEY);
+  if(raw){
+    try{ return JSON.parse(raw); }catch(e){}
+  }
+  const seeded = seedRecipes.map((r,i)=>({id:cryptoId(), number:i+1, title:r.title, ingredients:r.ingredients}));
+  saveRecipes(seeded);
+  return seeded;
+}
+function saveRecipes(list){ localStorage.setItem(STORE_KEY, JSON.stringify(list)); }
+function cryptoId(){ return 'r' + Math.random().toString(36).slice(2,9); }
+
+function loadDays(){
+  const raw = localStorage.getItem(DAYS_KEY);
+  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  const d = {};
+  DAY_NAMES.forEach(n=> d[n] = true);
+  return d;
+}
+function saveDays(d){ localStorage.setItem(DAYS_KEY, JSON.stringify(d)); }
+
+function loadWeekResult(){
+  const raw = localStorage.getItem(WEEK_KEY);
+  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  return {};
+}
+function saveWeekResult(w){ localStorage.setItem(WEEK_KEY, JSON.stringify(w)); }
+
+let recipes = loadRecipes();
+let dayState = loadDays();
+let weekResult = loadWeekResult();
+
+function renumber(){ recipes.forEach((r,i)=> r.number = i+1); }
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderRecipes(){
+  const container = document.getElementById('recipeList');
+  const tray = document.getElementById('storyTray');
+  document.getElementById('countChip').textContent = recipes.length;
+
+  if(recipes.length === 0){
+    container.innerHTML = '<div class="empty"><strong>No meals yet</strong>Add your first one above to get started.</div>';
+    tray.innerHTML = '';
+    return;
+  }
+
+  tray.innerHTML = recipes.map(r => `
+    <button class="story" onclick="jumpTo('${r.id}')">
+      <div class="story-ring"><div class="story-inner">${r.number}</div></div>
+      <span class="story-label">${escapeHtml(r.title.split(' ')[0])}</span>
+    </button>
+  `).join('');
+
+  container.innerHTML = recipes.map(r => `
+    <div class="recipe" id="card-${r.id}">
+      <div class="recipe-head">
+        <span class="recipe-num">${r.number}</span>
+        <span class="recipe-title">${escapeHtml(r.title)}</span>
+        <button class="icon-btn" onclick="deleteRecipe('${r.id}')" aria-label="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>
+      <ul class="recipe-ing">
+        ${r.ingredients.map(i => `<li>${escapeHtml(i)}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
+}
+
+function jumpTo(id){
+  const el = document.getElementById('card-' + id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 900);
+}
+
+function addRecipe(){
+  const titleEl = document.getElementById('titleInput');
+  const ingEl = document.getElementById('ingInput');
+  const title = titleEl.value.trim();
+  const ingredients = ingEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!title || ingredients.length === 0){
+    alert('Add a meal name and at least one ingredient.');
+    return;
+  }
+  recipes.push({id:cryptoId(), number:0, title, ingredients});
+  renumber();
+  saveRecipes(recipes);
+  renderRecipes();
+  titleEl.value = '';
+  ingEl.value = '';
+  titleEl.focus();
+}
+
+function deleteRecipe(id){
+  recipes = recipes.filter(r => r.id !== id);
+  renumber();
+  saveRecipes(recipes);
+  renderRecipes();
+}
+
+function renderDayRows(){
+  const container = document.getElementById('dayRows');
+  container.innerHTML = DAY_NAMES.map(day => {
+    const on = dayState[day];
+    const res = weekResult[day];
+    let resultHtml = '<span class="day-result" style="font-style:italic;">Skipped</span>';
+    if(on){
+      resultHtml = res
+        ? `<span class="day-result"><span class="title">${escapeHtml(res.title)}</span><span class="num">${res.number}</span></span>`
+        : `<span class="day-result">Not generated</span>`;
+    }
+    return `
+      <div class="day-row ${on ? '' : 'off'}" id="row-${day}" onclick="toggleDay('${day}')" role="checkbox" aria-checked="${on}">
+        <div class="day-name">${day}</div>
+        ${resultHtml}
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleDay(day){
+  dayState[day] = !dayState[day];
+  saveDays(dayState);
+  renderDayRows();
+  renderShoppingList();
+}
+
+function generateWeek(){
+  if(recipes.length === 0){
+    alert('Add some meals on the Recipes page first.');
+    return;
+  }
+  const activeDays = DAY_NAMES.filter(d => dayState[d]);
+  if(activeDays.length === 0){
+    alert('Turn at least one day back on to generate a plan.');
+    return;
+  }
+  const newResult = {};
+  const recentIds = []; // ids used on the last up to 2 included days
+  activeDays.forEach(day => {
+    let candidates = recipes.filter(r => !recentIds.includes(r.id));
+    if(candidates.length === 0) candidates = recipes; // not enough variety to avoid a repeat, fall back
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    newResult[day] = {number: pick.number, title: pick.title, id: pick.id};
+    recentIds.push(pick.id);
+    if(recentIds.length > 2) recentIds.shift();
+  });
+  weekResult = newResult;
+  saveWeekResult(weekResult);
+  renderDayRows();
+  renderShoppingList();
+}
+
+function computeShoppingList(){
+  const counts = {};
+  DAY_NAMES.forEach(day => {
+    if(!dayState[day]) return;
+    const entry = weekResult[day];
+    if(!entry) return;
+    const recipe = recipes.find(r => r.id === entry.id);
+    if(!recipe) return;
+    recipe.ingredients.forEach(ing => {
+      const key = ing.trim().toLowerCase();
+      if(!key) return;
+      if(!counts[key]) counts[key] = {label: ing.trim(), count: 0};
+      counts[key].count++;
+    });
+  });
+  return Object.values(counts).sort((a,b) => a.label.localeCompare(b.label));
+}
+
+function renderShoppingList(){
+  const container = document.getElementById('shopList');
+  const items = computeShoppingList();
+  if(items.length === 0){
+    container.innerHTML = '<div class="empty"><strong>Nothing to buy yet</strong>Generate a weekly plan and this list fills in automatically.</div>';
+    return;
+  }
+  container.innerHTML = items.map(i => `
+    <div class="shop-item">
+      <span class="label">${escapeHtml(i.label)}</span>
+      ${i.count > 1 ? `<span class="qty">×${i.count}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function showPage(name){
+  document.getElementById('page-recipes').classList.toggle('active', name==='recipes');
+  document.getElementById('page-week').classList.toggle('active', name==='week');
+  document.getElementById('page-shop').classList.toggle('active', name==='shop');
+  document.getElementById('navRecipes').classList.toggle('active', name==='recipes');
+  document.getElementById('navWeek').classList.toggle('active', name==='week');
+  document.getElementById('navShop').classList.toggle('active', name==='shop');
+  document.getElementById('pageSub').textContent =
+    name==='recipes' ? 'Your rotation of go-to meals' :
+    name==='week' ? 'Tap a day to include or skip it' :
+    'Updates automatically from your week';
+}
+
+renderRecipes();
+renderDayRows();
+renderShoppingList();
+</script>
+
+</body>
+</html>
